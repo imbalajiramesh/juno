@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch active credit packages
-    const { data: packages, error } = await supabase
+    const { data: packages, error } = await (supabase as any)
       .from('credit_packages')
       .select('*')
       .eq('is_active', true)

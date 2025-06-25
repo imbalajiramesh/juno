@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { getCurrentTenant } from '@/lib/get-tenant';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient();
@@ -12,7 +15,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get current credit balance
-    const { data: balance, error: balanceError } = await supabase
+    const { data: balance, error: balanceError } = await (supabase as any)
       .rpc('get_tenant_credit_balance', { tenant_id_param: tenant.id });
 
     if (balanceError) {
@@ -21,7 +24,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get recent transactions
-    const { data: transactions, error: transactionsError } = await supabase
+    const { data: transactions, error: transactionsError } = await (supabase as any)
       .from('credit_transactions')
       .select('*')
       .eq('tenant_id', tenant.id)
@@ -66,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Update credits using the database function
-    const { data: success, error } = await supabase
+    const { data: success, error } = await (supabase as any)
       .rpc('update_credits', {
         tenant_id_param: tenant.id,
         amount_param: credits,
@@ -83,7 +86,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get updated balance
-    const { data: newBalance } = await supabase
+    const { data: newBalance } = await (supabase as any)
       .rpc('get_tenant_credit_balance', { tenant_id_param: tenant.id });
 
     return NextResponse.json({

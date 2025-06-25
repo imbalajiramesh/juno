@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   // Verify this is a cron request
   const authHeader = request.headers.get('authorization');
@@ -14,7 +17,7 @@ export async function GET(request: NextRequest) {
     console.log('Starting monthly billing process...');
     
     // Get all phone numbers due for billing
-    const { data: phoneNumbers, error: fetchError } = await supabase
+    const { data: phoneNumbers, error: fetchError } = await (supabase as any)
       .from('tenant_phone_numbers')
       .select(`
         id,
@@ -53,7 +56,7 @@ export async function GET(request: NextRequest) {
     for (const phoneNumber of phoneNumbers) {
       try {
         // Check current credit balance
-        const { data: currentBalance, error: balanceError } = await supabase
+        const { data: currentBalance, error: balanceError } = await (supabase as any)
           .rpc('get_tenant_credit_balance', { 
             tenant_id_param: phoneNumber.tenant_id 
           });
@@ -70,7 +73,7 @@ export async function GET(request: NextRequest) {
 
         if (balance < requiredCredits) {
           // Insufficient balance - suspend the phone number
-          const { error: suspendError } = await supabase
+          const { error: suspendError } = await (supabase as any)
             .from('tenant_phone_numbers')
             .update({ 
               status: 'suspended',
@@ -93,7 +96,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Sufficient balance - deduct credits
-        const { data: updateSuccess, error: creditError } = await supabase
+        const { data: updateSuccess, error: creditError } = await (supabase as any)
           .rpc('update_credits', {
             tenant_id_param: phoneNumber.tenant_id,
             amount_param: -requiredCredits,
@@ -113,7 +116,7 @@ export async function GET(request: NextRequest) {
         const nextBillingDate = new Date();
         nextBillingDate.setDate(nextBillingDate.getDate() + 30);
 
-        const { error: updateError } = await supabase
+        const { error: updateError } = await (supabase as any)
           .from('tenant_phone_numbers')
           .update({ 
             next_billing_date: nextBillingDate.toISOString(),
@@ -204,7 +207,7 @@ async function sendLowBalanceNotification(tenantId: string, phoneNumber: string,
     if (!response.ok) {
       console.error('Failed to send low balance notification:', await response.text());
     } else {
-      console.log(`Low balance notification sent to ${adminEmail} for ${phoneNumber}`);
+      console.log(`Low balance notification sent for ${phoneNumber}`);
     }
 
   } catch (error) {

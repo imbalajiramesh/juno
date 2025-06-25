@@ -5,6 +5,9 @@ import { sendInvitationEmail } from '@/lib/invitation-email';
 import { checkUserPermission } from '@/lib/permissions-server';
 import { PERMISSIONS } from '@/lib/permissions';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 // GET - List invitations for the tenant
 export const GET = withTenant(async (tenantId: string) => {
   try {
@@ -19,7 +22,7 @@ export const GET = withTenant(async (tenantId: string) => {
 
     const supabase = await createClient();
     
-    const { data: invitations, error } = await supabase
+    const { data: invitations, error } = await (supabase as any)
       .from('invitations')
       .select(`
         *,
@@ -136,7 +139,7 @@ export const POST = withTenant(async (tenantId: string, req: NextRequest) => {
     }
 
     // Check if there's already a pending invitation
-    const { data: existingInvitation } = await supabase
+    const { data: existingInvitation } = await (supabase as any)
       .from('invitations')
       .select('id, accepted_at')
       .eq('email', email)
@@ -157,7 +160,7 @@ export const POST = withTenant(async (tenantId: string, req: NextRequest) => {
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
 
     // Create invitation
-    const { data: invitation, error: invitationError } = await supabase
+    const { data: invitation, error: invitationError } = await (supabase as any)
       .from('invitations')
       .insert({
         tenant_id: tenantId,
@@ -227,7 +230,7 @@ export const DELETE = withTenant(async (tenantId: string, req: NextRequest) => {
       );
     }
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('invitations')
       .delete()
       .eq('id', invitationId)

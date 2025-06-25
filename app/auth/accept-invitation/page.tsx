@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ interface InvitationData {
   expiresAt: string;
 }
 
-export default function AcceptInvitationPage() {
+function AcceptInvitationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams?.get('token');
@@ -273,26 +273,26 @@ export default function AcceptInvitationPage() {
                 />
               </div>
 
-                             {error && (
-                 <Alert variant="destructive">
-                   <IconAlertCircle className="h-4 w-4" />
-                   <AlertDescription>{error}</AlertDescription>
-                 </Alert>
-               )}
+              {error && (
+                <Alert variant="destructive">
+                  <IconAlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
 
               <Button
                 type="submit"
                 disabled={submitting}
                 className="w-full bg-black hover:bg-gray-800 text-white"
               >
-                                 {submitting ? (
-                   <>
-                     <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
-                     Creating Account...
-                   </>
-                 ) : (
-                   'Accept Invitation & Create Account'
-                 )}
+                {submitting ? (
+                  <>
+                    <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Account...
+                  </>
+                ) : (
+                  'Accept Invitation & Create Account'
+                )}
               </Button>
             </form>
 
@@ -321,5 +321,20 @@ export default function AcceptInvitationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AcceptInvitationPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center space-y-4">
+          <IconLoader2 className="h-8 w-8 animate-spin" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <AcceptInvitationContent />
+    </Suspense>
   );
 } 

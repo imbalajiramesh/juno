@@ -3,6 +3,9 @@ import { createClient } from '@/utils/supabase/server';
 import { getCurrentTenant } from '@/lib/get-tenant';
 import twilio from 'twilio';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -22,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get SMS pricing
-    const { data: pricing, error: pricingError } = await supabase
+    const { data: pricing, error: pricingError } = await (supabase as any)
       .from('pricing_config')
       .select('credits_per_unit')
       .eq('service_type', 'sms_send')
@@ -37,7 +40,7 @@ export async function POST(request: NextRequest) {
     const smsCredits = pricing?.credits_per_unit || 5;
 
     // Check credit balance
-    const { data: currentBalance, error: balanceError } = await supabase
+    const { data: currentBalance, error: balanceError } = await (supabase as any)
       .rpc('get_tenant_credit_balance', { tenant_id_param: tenant.id });
 
     if (balanceError) {
@@ -55,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get tenant's Twilio credentials or phone number
-    const { data: tenantData, error: tenantError } = await supabase
+    const { data: tenantData, error: tenantError } = await (supabase as any)
       .from('tenants')
       .select('twilio_subaccount_sid')
       .eq('id', tenant.id)
@@ -74,7 +77,7 @@ export async function POST(request: NextRequest) {
     let fromNumber = from;
     if (!fromNumber) {
       // Try to get tenant's first active phone number
-      const { data: phoneNumbers } = await supabase
+      const { data: phoneNumbers } = await (supabase as any)
         .from('tenant_phone_numbers')
         .select('phone_number')
         .eq('tenant_id', tenant.id)
@@ -99,7 +102,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Deduct credits on successful send
-      const { data: creditUpdateSuccess, error: creditError } = await supabase
+      const { data: creditUpdateSuccess, error: creditError } = await (supabase as any)
         .rpc('update_credits', {
           tenant_id_param: tenant.id,
           amount_param: -smsCredits,
@@ -115,7 +118,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Log the SMS in database (optional - create sms_logs table if needed)
-      await supabase
+      await (supabase as any)
         .from('sms_logs')
         .insert({
           tenant_id: tenant.id,
