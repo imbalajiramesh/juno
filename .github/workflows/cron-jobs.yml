@@ -19,6 +19,10 @@ on:
           - monthly-billing
           - auto-recharge
 
+env:
+  # Update this to your actual Vercel deployment URL
+  API_BASE_URL: https://juno-app.vercel.app
+
 jobs:
   monthly-billing:
     if: github.event.schedule == '0 2 * * *' || github.event.inputs.job_type == 'monthly-billing' || github.event.inputs.job_type == 'both'
@@ -26,7 +30,7 @@ jobs:
     steps:
       - name: Call Monthly Billing API
         run: |
-          response=$(curl -s -w "%{http_code}" -X GET "https://juno.laxmint.com/api/cron/monthly-billing" \
+          response=$(curl -s -w "%{http_code}" -X GET "${{ env.API_BASE_URL }}/api/cron/monthly-billing" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "User-Agent: github-actions/1.0")
           
@@ -47,7 +51,7 @@ jobs:
     steps:
       - name: Call Auto Recharge API
         run: |
-          response=$(curl -s -w "%{http_code}" -X GET "https://juno.laxmint.com/api/cron/auto-recharge-check" \
+          response=$(curl -s -w "%{http_code}" -X GET "${{ env.API_BASE_URL }}/api/cron/auto-recharge-check" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "User-Agent: github-actions/1.0")
           
