@@ -1,0 +1,63 @@
+name: Cron Jobs
+
+on:
+  schedule:
+    # Monthly billing at 2 AM UTC daily
+    - cron: '0 2 * * *'
+    # Auto-recharge check at 8 AM UTC daily
+    - cron: '0 8 * * *'
+  # Allow manual triggering for testing
+  workflow_dispatch:
+    inputs:
+      job_type:
+        description: 'Which job to run'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - monthly-billing
+          - auto-recharge
+
+jobs:
+  monthly-billing:
+    if: github.event.schedule == '0 2 * * *' || github.event.inputs.job_type == 'monthly-billing' || github.event.inputs.job_type == 'both'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Monthly Billing API
+        run: |
+          response=$(curl -s -w "%{http_code}" -X GET "https://juno.laxmint.com/api/cron/monthly-billing" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "User-Agent: github-actions/1.0")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n -1)
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" -ne 200 ]; then
+            echo "Monthly billing cron job failed with status $http_code"
+            exit 1
+          fi
+
+  auto-recharge:
+    if: github.event.schedule == '0 8 * * *' || github.event.inputs.job_type == 'auto-recharge' || github.event.inputs.job_type == 'both'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Auto Recharge API
+        run: |
+          response=$(curl -s -w "%{http_code}" -X GET "https://juno.laxmint.com/api/cron/auto-recharge-check" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "User-Agent: github-actions/1.0")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n -1)
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" -ne 200 ]; then
+            echo "Auto recharge cron job failed with status $http_code"
+            exit 1
+          fi 
