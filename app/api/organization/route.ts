@@ -9,6 +9,8 @@ import { sendFarewellEmail } from '@/lib/email';
 export const GET = withTenant(async (tenantId: string) => {
   const supabase = await createClient();
   try {
+    console.log('Fetching organization for tenantId:', tenantId);
+    
     // Get organization details - this might need to be adapted based on your schema
     const { data: organization, error } = await supabase
       .from('tenants') // Assuming you have a tenants table
@@ -29,6 +31,8 @@ export const GET = withTenant(async (tenantId: string) => {
       `)
       .eq('id', tenantId)
       .single();
+
+    console.log('Organization query result:', { organization, error });
 
     if (error) throw error;
 

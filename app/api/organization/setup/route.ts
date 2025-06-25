@@ -11,11 +11,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
     }
 
-    const { industry, description, size, location } = await req.json();
+    const { name, industry, description, size, location } = await req.json();
 
     // Validate required fields
-    if (!industry || !description || !size || !location) {
-      return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
+    if (!name || !industry) {
+      return NextResponse.json({ error: 'Organization name and industry are required' }, { status: 400 });
     }
 
     // Create Vapi organization for this tenant
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: `${tenant.name} Organization`,
+          name: `${name} Organization`,
           plan: 'starter'
         }),
       });
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: new URLSearchParams({
-          FriendlyName: `${tenant.name} Subaccount`
+          FriendlyName: `${name} Subaccount`
         })
       });
 
@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
     const { data: updatedTenant, error: updateError } = await supabase
       .from('tenants')
       .update({
+        name,
         industry,
         description,
         size,
