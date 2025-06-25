@@ -21,7 +21,7 @@ on:
 
 env:
   # Update this to your actual Vercel deployment URL
-  API_BASE_URL: https://juno-app.vercel.app
+  API_BASE_URL: https://juno.laxmint.com
 
 jobs:
   monthly-billing:
