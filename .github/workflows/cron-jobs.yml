@@ -6,25 +6,31 @@ on:
     - cron: '0 2 1 * *'
     # Auto-recharge check every 6 hours (matches Vercel)
     - cron: '0 */6 * * *'
+    # Email processing every 5 minutes (balanced frequency)
+    - cron: '*/5 * * * *'
+    # Campaign cleanup daily at 3 AM UTC (avoid conflict with monthly billing)
+    - cron: '0 3 * * *'
   # Allow manual triggering for testing
   workflow_dispatch:
     inputs:
       job_type:
         description: 'Which job to run'
         required: true
-        default: 'both'
+        default: 'all'
         type: choice
         options:
-          - both
+          - all
           - monthly-billing
           - auto-recharge
+          - email-processing
+          - campaign-cleanup
 
 env:
   API_BASE_URL: https://juno.laxmint.com
 
 jobs:
   monthly-billing:
-    if: github.event.schedule == '0 2 1 * *' || github.event.inputs.job_type == 'monthly-billing' || github.event.inputs.job_type == 'both'
+    if: github.event.schedule == '0 2 1 * *' || github.event.inputs.job_type == 'monthly-billing' || github.event.inputs.job_type == 'all'
     runs-on: ubuntu-latest
     steps:
       - name: Call Monthly Billing API
@@ -48,7 +54,7 @@ jobs:
           fi
 
   auto-recharge:
-    if: github.event.schedule == '0 */6 * * *' || github.event.inputs.job_type == 'auto-recharge' || github.event.inputs.job_type == 'both'
+    if: github.event.schedule == '0 */6 * * *' || github.event.inputs.job_type == 'auto-recharge' || github.event.inputs.job_type == 'all'
     runs-on: ubuntu-latest
     steps:
       - name: Call Auto Recharge API
@@ -69,4 +75,83 @@ jobs:
             exit 1
           else
             echo "✅ Auto-recharge check completed successfully"
-          fi 
+          fi
+
+  email-processing:
+    if: github.event.schedule == '*/5 * * * *' || github.event.inputs.job_type == 'email-processing' || github.event.inputs.job_type == 'all'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Process Email Queue
+        run: |
+          echo "📧 Processing email queue at $(date)"
+          
+          response=$(curl -X POST "${{ env.API_BASE_URL }}/api/cron/process-notifications" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -H "User-Agent: github-actions/email-processing/1.0" \
+            --max-time 30 \
+            --retry 2 \
+            --silent \
+            --write-out "HTTPSTATUS:%{http_code}" \
+            --fail-with-body)
+          
+          http_code=$(echo $response | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+          body=$(echo $response | sed -e 's/HTTPSTATUS:.*//g')
+          
+          if [ $http_code -eq 200 ]; then
+            echo "✅ Email processing successful: $body"
+          else
+            echo "❌ Email processing failed with status $http_code: $body"
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "📧 Email processing job completed at $(date)"
+
+  campaign-cleanup:
+    if: github.event.schedule == '0 3 * * *' || github.event.inputs.job_type == 'campaign-cleanup' || github.event.inputs.job_type == 'all'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleanup Expired Paused Campaigns
+        run: |
+          echo "🧹 Starting cleanup of expired paused campaigns..."
+          
+          response=$(curl -s -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -H "User-Agent: github-actions/campaign-cleanup/1.0" \
+            "${{ env.API_BASE_URL }}/api/cron/cleanup-paused-campaigns")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n -1)
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ Campaign cleanup completed successfully"
+          else
+            echo "❌ Campaign cleanup failed with status $http_code"
+            exit 1
+          fi
+
+      - name: Log Cleanup Results
+        if: always()
+        run: |
+          echo "🧹 Cleanup job completed at $(date)"
+          echo "📅 Next scheduled run: $(date -d 'tomorrow 3:00' -u)"
+
+  # Notification job for any failures
+  notify-on-failure:
+    runs-on: ubuntu-latest
+    needs: [monthly-billing, auto-recharge, email-processing, campaign-cleanup]
+    if: failure()
+    steps:
+      - name: Send Failure Notification
+        run: |
+          echo "🚨 One or more cron jobs failed!"
+          echo "📧 Consider setting up email/Slack notifications here"
+          # Add notification logic here (email, Slack, etc.) 
