@@ -14,9 +14,9 @@ import { CallDetailsModal } from '@/components/call-details-modal';
 import { Skeleton } from '../ui/skeleton';
 import { Database } from '@/lib/database.types';
 
-type AlexCallLog = Database['public']['Tables']['alex_call_logs']['Row'];
+type JunoCallLog = Database['public']['Tables']['juno_call_logs']['Row'];
 
-interface CallLogWithCustomer extends AlexCallLog {
+interface CallLogWithCustomer extends JunoCallLog {
   customers: {
     first_name: string;
     last_name: string;

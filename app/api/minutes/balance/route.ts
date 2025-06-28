@@ -7,29 +7,17 @@ import { createClient } from '@/utils/supabase/server';
 export async function GET() {
     const supabase = await createClient();
     try {
-        // Get total minutes added from alex_add_minutes table
-        const { data: addedMinutes } = await supabase
-            .from('alex_add_minutes')
-            .select('total_minutes');
-        
-        // Get total minutes used from call logs
-        const { data: callLogs } = await supabase
-            .from('alex_call_logs')
-            .select('duration_minutes');
+        // Get current credit balance using the new credits system
+        const { data: balance, error: balanceError } = await supabase
+            .rpc('get_tenant_credit_balance', { tenant_id_param: 'default' });
 
-        const totalAdded = (addedMinutes || []).reduce((sum, record) => sum + (Number(record.total_minutes) || 0), 0);
-        const totalUsed = (callLogs || []).reduce((sum, record) => sum + (Number(record.duration_minutes) || 0), 0);
-        
-        const balance = totalAdded - totalUsed;
-
-        console.log('Balance calculation:', {
-            totalMinutes: totalAdded,
-            usedMinutes: totalUsed,
-            balance
-        });
+        if (balanceError) {
+            console.error('Error getting credit balance:', balanceError);
+            return NextResponse.json({ total: 0 });
+        }
 
         return NextResponse.json({ 
-            total: balance
+            total: balance || 0
         });
     } catch (error) {
         console.error('Error fetching balance minutes:', error);

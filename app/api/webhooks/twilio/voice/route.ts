@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     // Create a call log entry
     await supabase
-      .from('alex_call_logs')
+      .from('juno_call_logs')
       .insert({
         id: crypto.randomUUID(),
         tenant_id: phoneNumber.tenants.id,

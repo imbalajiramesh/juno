@@ -2,10 +2,10 @@ name: Cron Jobs
 
 on:
   schedule:
-    # Monthly billing at 2 AM UTC daily
-    - cron: '0 2 * * *'
-    # Auto-recharge check at 8 AM UTC daily
-    - cron: '0 8 * * *'
+    # Monthly billing on 1st of every month at 2 AM UTC (matches Vercel)
+    - cron: '0 2 1 * *'
+    # Auto-recharge check every 6 hours (matches Vercel)
+    - cron: '0 */6 * * *'
   # Allow manual triggering for testing
   workflow_dispatch:
     inputs:
@@ -20,19 +20,19 @@ on:
           - auto-recharge
 
 env:
-  # Update this to your actual Vercel deployment URL
   API_BASE_URL: https://juno.laxmint.com
 
 jobs:
   monthly-billing:
-    if: github.event.schedule == '0 2 * * *' || github.event.inputs.job_type == 'monthly-billing' || github.event.inputs.job_type == 'both'
+    if: github.event.schedule == '0 2 1 * *' || github.event.inputs.job_type == 'monthly-billing' || github.event.inputs.job_type == 'both'
     runs-on: ubuntu-latest
     steps:
       - name: Call Monthly Billing API
         run: |
+          echo "🗓️ Starting monthly billing process..."
           response=$(curl -s -w "%{http_code}" -X GET "${{ env.API_BASE_URL }}/api/cron/monthly-billing" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "User-Agent: github-actions/1.0")
+            -H "User-Agent: github-actions/monthly-billing/1.0")
           
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | head -n -1)
@@ -41,19 +41,22 @@ jobs:
           echo "Response: $body"
           
           if [ "$http_code" -ne 200 ]; then
-            echo "Monthly billing cron job failed with status $http_code"
+            echo "❌ Monthly billing cron job failed with status $http_code"
             exit 1
+          else
+            echo "✅ Monthly billing completed successfully"
           fi
 
   auto-recharge:
-    if: github.event.schedule == '0 8 * * *' || github.event.inputs.job_type == 'auto-recharge' || github.event.inputs.job_type == 'both'
+    if: github.event.schedule == '0 */6 * * *' || github.event.inputs.job_type == 'auto-recharge' || github.event.inputs.job_type == 'both'
     runs-on: ubuntu-latest
     steps:
       - name: Call Auto Recharge API
         run: |
+          echo "⚡ Starting auto-recharge check (runs every 6 hours)..."
           response=$(curl -s -w "%{http_code}" -X GET "${{ env.API_BASE_URL }}/api/cron/auto-recharge-check" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "User-Agent: github-actions/1.0")
+            -H "User-Agent: github-actions/auto-recharge/1.0")
           
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | head -n -1)
@@ -62,6 +65,8 @@ jobs:
           echo "Response: $body"
           
           if [ "$http_code" -ne 200 ]; then
-            echo "Auto recharge cron job failed with status $http_code"
+            echo "❌ Auto recharge cron job failed with status $http_code"
             exit 1
+          else
+            echo "✅ Auto-recharge check completed successfully"
           fi 

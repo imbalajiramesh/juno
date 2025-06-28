@@ -19,7 +19,7 @@ export async function GET(request: Request) {
 
         // Build query
         let query = supabase
-            .from('alex_call_logs')
+            .from('juno_call_logs')
             .select(`
                 *, 
                 customers(first_name, last_name),

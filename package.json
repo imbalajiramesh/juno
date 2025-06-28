@@ -1,5 +1,5 @@
 {
-  "name": "clean-energy",
+  "name": "juno",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -71,6 +71,7 @@
     "twilio": "^5.7.1",
     "use-debounce": "^10.0.5",
     "vaul": "^1.1.2",
+    "xlsx": "^0.18.5",
     "zod": "^3.25.67"
   },
   "devDependencies": {

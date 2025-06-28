@@ -52,7 +52,7 @@ async function handleConversationStarted(call: any, assistant: any) {
 
     // Create a call log entry
     await supabase
-      .from('alex_call_logs')
+      .from('juno_call_logs')
       .insert({
         id: crypto.randomUUID(),
         tenant_id: agent.tenant_id,
@@ -93,7 +93,7 @@ async function handleConversationEnded(call: any, assistant: any) {
 
     // Update the call log with final details
     await supabase
-      .from('alex_call_logs')
+      .from('juno_call_logs')
       .update({
         call_recording_url: call.recordingUrl || null,
         call_summary: call.summary || 'Call completed',
@@ -138,7 +138,7 @@ async function handleTranscript(call: any, webhookBody: any) {
 
     // Update or append to transcript
     const { data: existingCall } = await supabase
-      .from('alex_call_logs')
+      .from('juno_call_logs')
       .select('call_transcript')
       .eq('vapi_call_id', call.id)
       .eq('tenant_id', agent.tenant_id)
@@ -149,7 +149,7 @@ async function handleTranscript(call: any, webhookBody: any) {
       : transcript;
 
     await supabase
-      .from('alex_call_logs')
+      .from('juno_call_logs')
       .update({
         call_transcript: newTranscript,
         updated_at: new Date().toISOString(),

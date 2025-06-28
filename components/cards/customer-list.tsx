@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Phone, ArrowLeft, ArrowRight, Download, Upload, Plus, Settings, Eye, EyeOff } from "lucide-react";
+import { Phone, ArrowLeft, ArrowRight, Download, Upload, Plus, Settings, Eye, EyeOff, MessageSquare } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,10 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { AddCustomerModal } from '@/components/modals/add-customer-modal';
+import { EnhancedImportModal } from '@/components/modals/enhanced-import-modal';
+import { EnhancedExportModal } from '@/components/modals/enhanced-export-modal';
+import { AddInteractionModal } from '@/components/modals/add-interaction-modal';
+import { Checkbox } from "@/components/ui/checkbox";
 
 type Customer = Database['public']['Tables']['customers']['Row'];
 type UserAccount = Database['public']['Tables']['user_accounts']['Row'];
@@ -57,9 +61,22 @@ export default function CustomerList() {
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [visibleColumns, setVisibleColumns] = useState(DEFAULT_COLUMNS);
   const [visibleCustomFields, setVisibleCustomFields] = useState<Record<string, boolean>>({});
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
+  const [showSelectColumn, setShowSelectColumn] = useState(false);
   const itemsPerPage = 10;
   const router = useRouter();
+  
+  // Modal states
   const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isAddInteractionModalOpen, setIsAddInteractionModalOpen] = useState(false);
+  const [selectedCustomerForInteraction, setSelectedCustomerForInteraction] = useState<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    email?: string;
+  } | null>(null);
 
   useEffect(() => {
     fetchCustomers();
@@ -119,7 +136,8 @@ export default function CustomerList() {
   const getTotalVisibleColumns = () => {
     const baseColumns = Object.values(visibleColumns).filter(Boolean).length;
     const customColumns = Object.values(visibleCustomFields).filter(Boolean).length;
-    return baseColumns + customColumns + 1; // +1 for Actions column
+    const selectColumn = showSelectColumn ? 1 : 0;
+    return baseColumns + customColumns + selectColumn + 1; // +1 for Actions column
   };
 
   const handleCall = (phoneNumber: string) => {
@@ -131,49 +149,42 @@ export default function CustomerList() {
     router.push(`/customers/${customerId}`);
   };
 
-  const handleExport = async () => {
-    try {
-      const response = await fetch('/api/customers/export', {
-        method: 'GET',
-      });
-      if (!response.ok) throw new Error('Failed to export customers');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'customers.csv';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast.success('Customers exported successfully');
-    } catch (error) {
-      toast.error('Failed to export customers');
-    }
+  // Updated handlers for enhanced modals
+  const handleImportClick = () => {
+    setIsImportModalOpen(true);
   };
 
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleExportClick = () => {
+    setIsExportModalOpen(true);
+  };
 
-    const formData = new FormData();
-    formData.append('file', file);
+  const handleImportComplete = () => {
+    fetchCustomers(); // Refresh the customer list
+    setIsImportModalOpen(false);
+  };
 
-    try {
-      const response = await fetch('/api/customers/import', {
-        method: 'POST',
-        body: formData,
-      });
+  // Customer selection handlers
+  const toggleCustomerSelection = (customerId: string) => {
+    setSelectedCustomers(prev => 
+      prev.includes(customerId) 
+        ? prev.filter(id => id !== customerId)
+        : [...prev, customerId]
+    );
+  };
 
-      if (!response.ok) throw new Error('Failed to import customers');
-
-      toast.success('Customers imported successfully');
-
-      fetchCustomers(); // Refresh the list
-    } catch (error) {
-      toast.error('Failed to import customers');
+  const toggleSelectAll = () => {
+    const currentPageCustomerIds = filteredCustomers.map(c => c.id);
+    const allSelected = currentPageCustomerIds.every(id => selectedCustomers.includes(id));
+    
+    if (allSelected) {
+      // Deselect all on current page
+      setSelectedCustomers(prev => prev.filter(id => !currentPageCustomerIds.includes(id)));
+    } else {
+      // Select all on current page
+      setSelectedCustomers(prev => [
+        ...prev.filter(id => !currentPageCustomerIds.includes(id)),
+        ...currentPageCustomerIds
+      ]);
     }
   };
 
@@ -192,29 +203,36 @@ export default function CustomerList() {
     await fetchCustomers();
   };
 
+  const handleAddInteraction = (customer: CustomerWithRelations) => {
+    setSelectedCustomerForInteraction({
+      id: customer.id,
+      first_name: customer.first_name,
+      last_name: customer.last_name,
+      email: customer.email || undefined
+    });
+    setIsAddInteractionModalOpen(true);
+  };
+
+  const handleInteractionAdded = () => {
+    setIsAddInteractionModalOpen(false);
+    setSelectedCustomerForInteraction(null);
+    fetchCustomers(); // Refresh customer list to update interaction counts
+  };
+
   return (
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle>Customers</CardTitle>
           <div className="flex gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  Import/Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={handleExport}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Export to CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => document.getElementById('import-file')?.click()}>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Import from CSV
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button variant="outline" onClick={handleImportClick}>
+              <Upload className="mr-2 h-4 w-4" />
+              Import
+            </Button>
+            <Button variant="outline" onClick={handleExportClick}>
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
             <Button onClick={handleAddNewCustomer}>
               <Plus className="mr-2 h-4 w-4" />
               Add Customer
@@ -231,8 +249,21 @@ export default function CustomerList() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-64"
             />
+            {selectedCustomers.length > 0 && (
+              <div className="text-sm text-muted-foreground">
+                {selectedCustomers.length} customer(s) selected
+              </div>
+            )}
           </div>
           <div className="flex items-center space-x-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowSelectColumn(!showSelectColumn)}
+            >
+              {showSelectColumn ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+              Bulk Select
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -304,16 +335,21 @@ export default function CustomerList() {
             </DropdownMenu>
           </div>
         </div>
-        <input
-          type="file"
-          id="import-file"
-          accept=".csv"
-          className="hidden"
-          onChange={handleImport}
-        />
+        
         <Table>
           <TableHeader>
             <TableRow>
+              {showSelectColumn && (
+                <TableHead>
+                  <Checkbox
+                    checked={
+                      filteredCustomers.length > 0 && 
+                      filteredCustomers.every(customer => selectedCustomers.includes(customer.id))
+                    }
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
+              )}
               {visibleColumns.name && <TableHead>Name</TableHead>}
               {visibleColumns.phone && <TableHead>Phone Number</TableHead>}
               {visibleColumns.email && <TableHead>Email</TableHead>}
@@ -343,6 +379,14 @@ export default function CustomerList() {
             ) : (
               filteredCustomers.map((customer) => (
                 <TableRow key={customer.id}>
+                  {showSelectColumn && (
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedCustomers.includes(customer.id)}
+                        onCheckedChange={() => toggleCustomerSelection(customer.id)}
+                      />
+                    </TableCell>
+                  )}
                   {visibleColumns.name && (
                     <TableCell>{`${customer.first_name} ${customer.last_name}`}</TableCell>
                   )}
@@ -397,13 +441,23 @@ export default function CustomerList() {
                     </TableCell>
                   )}
                   <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openCustomerProfile(customer.id)}
-                    >
-                      View Details
-                    </Button>
+                    <div className="flex items-center gap-2 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAddInteraction(customer)}
+                        title="Add Interaction"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openCustomerProfile(customer.id)}
+                      >
+                        View Details
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -441,11 +495,32 @@ export default function CustomerList() {
         </div>
       </CardContent>
 
+      {/* Enhanced Modals */}
       <AddCustomerModal
         isOpen={isAddCustomerModalOpen}
         onClose={() => setIsAddCustomerModalOpen(false)}
         onCustomerAdded={handleCustomerAdded}
       />
+      
+      <EnhancedImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportComplete={handleImportComplete}
+      />
+      
+      <EnhancedExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        selectedCustomers={selectedCustomers}
+        totalCustomers={totalCustomers}
+      />
+
+             <AddInteractionModal
+         isOpen={isAddInteractionModalOpen}
+         onOpenChange={setIsAddInteractionModalOpen}
+         customer={selectedCustomerForInteraction}
+         onSuccess={handleInteractionAdded}
+       />
     </Card>
   );
 } 

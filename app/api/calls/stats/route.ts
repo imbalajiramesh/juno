@@ -9,7 +9,7 @@ export async function GET() {
     try {
         // Get total count of calls
         const { count: currentCount, error } = await supabase
-            .from('alex_call_logs')
+            .from('juno_call_logs')
             .select('*', { count: 'exact', head: true });
 
         if (error) throw error;

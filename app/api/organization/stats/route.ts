@@ -22,17 +22,17 @@ export const GET = withTenant(async (tenantId: string) => {
         .eq('tenant_id', tenantId),
       
       supabase
-        .from('alex_call_logs')
+        .from('juno_call_logs')
         .select('id, duration_minutes, created_at')
         .eq('tenant_id', tenantId),
       
       supabase
-        .from('alex_email_logs')
+        .from('juno_email_logs')
         .select('id, created_at')
         .eq('tenant_id', tenantId),
       
       supabase
-        .from('alex_sms_logs')
+        .from('juno_sms_logs')
         .select('id, created_at')
         .eq('tenant_id', tenantId),
       

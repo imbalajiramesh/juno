@@ -8,9 +8,9 @@ import {
 } from "@/components/ui/dialog";
 import { Database } from '@/lib/database.types';
 
-type AlexCallLog = Database['public']['Tables']['alex_call_logs']['Row'];
+type JunoCallLog = Database['public']['Tables']['juno_call_logs']['Row'];
 
-interface CallLogWithCustomer extends AlexCallLog {
+interface CallLogWithCustomer extends JunoCallLog {
   customers: {
     first_name: string;
     last_name: string;

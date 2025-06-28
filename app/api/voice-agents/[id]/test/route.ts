@@ -31,7 +31,7 @@ export const POST = withTenant(async (tenantId: string, req: NextRequest, { para
 
     // Log the test activity (free, no credits charged)
     await supabase
-      .from('alex_call_logs')
+      .from('juno_call_logs')
       .insert({
         id: crypto.randomUUID(),
         tenant_id: tenantId,

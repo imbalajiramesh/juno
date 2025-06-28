@@ -75,7 +75,22 @@ export async function POST(
 
     switch (service_type) {
       case 'dlc_brand_registration':
-        const { business_name, business_website, business_type } = serviceData;
+        let { business_name, business_website, business_type } = serviceData;
+        
+        // Auto-fill from organization data if auto_submit is true
+        if (serviceData.auto_submit || serviceData.use_organization_docs) {
+          const { data: orgData } = await (supabase as any)
+            .from('tenants')
+            .select('name, website, business_type')
+            .eq('id', tenant.id)
+            .single();
+
+          if (orgData) {
+            business_name = business_name || orgData.name;
+            business_website = business_website || orgData.website || `https://${orgData.name.toLowerCase().replace(/\s+/g, '')}.com`;
+            business_type = business_type || orgData.business_type || 'corporation';
+          }
+        }
         
         if (!business_name || !business_website || !business_type) {
           return NextResponse.json({ 

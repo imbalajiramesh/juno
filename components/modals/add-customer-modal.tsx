@@ -96,10 +96,12 @@ const createCustomerSchema = (customFields: CustomField[]) => {
 
 export function AddCustomerModal({ isOpen, onClose, onCustomerAdded }: AddCustomerModalProps) {
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [customerStatuses, setCustomerStatuses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     fetchCustomFields();
+    fetchCustomerStatuses();
   }, []);
 
   const fetchCustomFields = async () => {
@@ -114,6 +116,26 @@ export function AddCustomerModal({ isOpen, onClose, onCustomerAdded }: AddCustom
     }
   };
 
+  const fetchCustomerStatuses = async () => {
+    try {
+      const response = await fetch('/api/customer-statuses');
+      if (!response.ok) throw new Error('Failed to fetch customer statuses');
+      const statuses = await response.json();
+      setCustomerStatuses(statuses);
+    } catch (error) {
+      console.error('Error fetching customer statuses:', error);
+      // Fall back to default statuses
+      setCustomerStatuses([
+        { name: 'new', label: 'New' },
+        { name: 'contacted', label: 'Contacted' },
+        { name: 'qualified', label: 'Qualified' },
+        { name: 'proposal', label: 'Proposal' },
+        { name: 'closed_won', label: 'Closed Won' },
+        { name: 'closed_lost', label: 'Closed Lost' },
+      ]);
+    }
+  };
+
   const form = useForm({
     resolver: zodResolver(createCustomerSchema(customFields)),
     defaultValues: {
@@ -123,7 +145,7 @@ export function AddCustomerModal({ isOpen, onClose, onCustomerAdded }: AddCustom
       phone_number: '',
       address: '',
       zip_code: '',
-      status: 'new',
+      status: customerStatuses.find(s => s.is_default)?.name || 'new',
       notes: '',
       ...customFields.reduce((acc: any, field) => {
         acc[field.name] = field.type === 'boolean' ? false : '';
@@ -131,6 +153,14 @@ export function AddCustomerModal({ isOpen, onClose, onCustomerAdded }: AddCustom
       }, {}),
     },
   });
+
+  // Update default status when statuses are loaded
+  useEffect(() => {
+    if (customerStatuses.length > 0) {
+      const defaultStatus = customerStatuses.find(s => s.is_default)?.name || customerStatuses[0]?.name || 'new';
+      form.setValue('status', defaultStatus);
+    }
+  }, [customerStatuses, form]);
 
   const onSubmit = async (data: any) => {
     setIsLoading(true);
@@ -403,12 +433,11 @@ export function AddCustomerModal({ isOpen, onClose, onCustomerAdded }: AddCustom
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="new">New</SelectItem>
-                      <SelectItem value="contacted">Contacted</SelectItem>
-                      <SelectItem value="qualified">Qualified</SelectItem>
-                      <SelectItem value="proposal">Proposal</SelectItem>
-                      <SelectItem value="closed_won">Closed Won</SelectItem>
-                      <SelectItem value="closed_lost">Closed Lost</SelectItem>
+                      {customerStatuses.map((status) => (
+                        <SelectItem key={status.name} value={status.name}>
+                          {status.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

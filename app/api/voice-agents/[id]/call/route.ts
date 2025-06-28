@@ -10,6 +10,13 @@ interface CallRequest {
 export const POST = withTenant(async (tenantId: string, req: NextRequest, { params }: { params: { id: string } }) => {
   const supabase = await createClient();
   try {
+    // Check organization approval before allowing voice calls
+    const { checkOrganizationApproval } = await import('@/lib/organization-verification');
+    const verificationError = await checkOrganizationApproval();
+    if (verificationError) {
+      return verificationError;
+    }
+
     const agentId = params.id;
     const { customerPhone, customerId }: CallRequest = await req.json();
 

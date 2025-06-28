@@ -9,7 +9,7 @@ export async function GET() {
     try {
         // Get all call logs and sum the duration_minutes
         const { data: callLogs, error } = await supabase
-            .from('alex_call_logs')
+            .from('juno_call_logs')
             .select('duration_minutes');
 
         if (error) throw error;

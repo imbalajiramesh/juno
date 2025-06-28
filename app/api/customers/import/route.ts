@@ -38,7 +38,17 @@ export const POST = withTenant(async (tenantId: string, req: NextRequest) => {
           last_name: record.Last_Name,
           email: record.Email,
           phone_number: record.Phone_Number,
+          address: record.Address,
+          zip_code: record.ZIP_Code,
           status: record.Status || 'New',
+          // Agent interaction fields
+                total_juno_calls: record.Total_Juno_Calls ? parseInt(record.Total_Juno_Calls) || 0 : 0,
+      total_juno_emails: record.Total_Juno_Emails ? parseInt(record.Total_Juno_Emails) || 0 : 0,
+      total_juno_sms: record.Total_Juno_SMS ? parseInt(record.Total_Juno_SMS) || 0 : 0,
+      juno_call_duration_total: record.Juno_Call_Duration_Total ? parseInt(record.Juno_Call_Duration_Total) || 0 : 0,
+      last_juno_call_date: record.Last_Juno_Call_Date ? new Date(record.Last_Juno_Call_Date).toISOString() : null,
+      last_juno_interaction_type: record.Last_Juno_Interaction_Type || null,
+      last_juno_interaction_date: record.Last_Juno_Interaction_Date ? new Date(record.Last_Juno_Interaction_Date).toISOString() : null,
         };
 
         // Extract custom fields (including notes)
@@ -48,8 +58,14 @@ export const POST = withTenant(async (tenantId: string, req: NextRequest) => {
         }
 
         // Add any additional custom fields from the CSV
+        const excludedColumns = [
+          'First_Name', 'Last_Name', 'Email', 'Phone_Number', 'Address', 'ZIP_Code', 'Status', 'Notes',
+                'Total_Juno_Calls', 'Total_Juno_Emails', 'Total_Juno_SMS', 'Juno_Call_Duration_Total',
+      'Last_Juno_Call_Date', 'Last_Juno_Interaction_Type', 'Last_Juno_Interaction_Date'
+        ];
+        
         Object.entries(record).forEach(([key, value]) => {
-          if (!['First_Name', 'Last_Name', 'Email', 'Phone_Number', 'Status', 'Notes'].includes(key) && value) {
+          if (!excludedColumns.includes(key) && value) {
             customFields[key] = value;
           }
         });

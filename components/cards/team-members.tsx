@@ -5,8 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { createClient } from '@/utils/supabase/client';
-
 interface Member {
   id: string;
   first_name: string | null;
@@ -19,14 +17,14 @@ interface Member {
   appointments_till_date: number | null;
   deals_closed_till_date: number | null;
   calls_made_till_date: number | null;
+  role?: {
+    role_name: string;
+  };
 }
 
-// Initialize Supabase client
 interface TeamMemberListProps {
     refreshKey?: number;
   }
-  
-  const supabase = createClient();
   
   export default function TeamMemberList({ refreshKey = 0 }: TeamMemberListProps) {
     const [members, setMembers] = useState<Member[]>([]);
@@ -36,12 +34,18 @@ interface TeamMemberListProps {
     }, [refreshKey]);
 
   async function fetchMembers() {
-    const { data, error } = await supabase
-      .from('user_accounts')
-      .select('*');
-    
-    if (error) console.error('Error fetching members:', error);
-    else setMembers(data || []);
+    try {
+      // Use the API endpoint to ensure proper tenant filtering and permissions
+      const response = await fetch('/api/team');
+      if (!response.ok) {
+        throw new Error('Failed to fetch team members');
+      }
+      const data = await response.json();
+      setMembers(data || []);
+    } catch (error) {
+      console.error('Error fetching members:', error);
+      setMembers([]);
+    }
   }
 
   function calculatePercentage(part: string, whole: string) {
@@ -95,6 +99,12 @@ interface TeamMemberListProps {
               <div className="flex justify-between">
                 <span className="text-sm font-medium">Closed %:</span>
                 <span className="text-sm">{calculatePercentage(String(member.deals_closed_till_date || 0), String(member.appointments_till_date || 0))}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Role:</span>
+                <Badge variant="outline" className="bg-blue-500 text-white">
+                  {member.role?.role_name || 'No Role'}
+                </Badge>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Status:</span>

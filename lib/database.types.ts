@@ -63,8 +63,64 @@ export type Database = {
         }
         Relationships: []
       }
-      alex_call_logs: {
+      credit_balances: {
         Row: {
+          id: string
+          tenant_id: string
+          balance: number
+          last_updated: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          balance?: number
+          last_updated?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          balance?: number
+          last_updated?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          id: string
+          tenant_id: string
+          transaction_type: string
+          amount: number
+          description: string
+          reference_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          transaction_type: string
+          amount: number
+          description: string
+          reference_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          transaction_type?: string
+          amount?: number
+          description?: string
+          reference_id?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      juno_call_logs: {
+        Row: {
+          ai_next_steps: string | null
+          ai_summary: string | null
           call_recording_url: string | null
           call_summary: string | null
           call_transcript: string | null
@@ -73,9 +129,14 @@ export type Database = {
           duration_minutes: number | null
           id: string
           tenant_id: string
+          twilio_call_sid: string | null
+          vapi_call_id: string | null
+          voice_agent_id: string | null
           updated_at: string
         }
         Insert: {
+          ai_next_steps?: string | null
+          ai_summary?: string | null
           call_recording_url?: string | null
           call_summary?: string | null
           call_transcript?: string | null
@@ -84,9 +145,14 @@ export type Database = {
           duration_minutes?: number | null
           id: string
           tenant_id: string
+          twilio_call_sid?: string | null
+          vapi_call_id?: string | null
+          voice_agent_id?: string | null
           updated_at: string
         }
         Update: {
+          ai_next_steps?: string | null
+          ai_summary?: string | null
           call_recording_url?: string | null
           call_summary?: string | null
           call_transcript?: string | null
@@ -95,18 +161,21 @@ export type Database = {
           duration_minutes?: number | null
           id?: string
           tenant_id?: string
+          twilio_call_sid?: string | null
+          vapi_call_id?: string | null
+          voice_agent_id?: string | null
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "alex_call_logs_customer_id_fkey"
+            foreignKeyName: "juno_call_logs_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "alex_call_logs_tenant_id_fkey"
+            foreignKeyName: "juno_call_logs_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -114,8 +183,10 @@ export type Database = {
           },
         ]
       }
-      alex_email_logs: {
+      juno_email_logs: {
         Row: {
+          ai_next_steps: string | null
+          ai_summary: string | null
           created_at: string
           customer_id: string
           email_attachment_url: string | null
@@ -127,6 +198,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_next_steps?: string | null
+          ai_summary?: string | null
           created_at?: string
           customer_id: string
           email_attachment_url?: string | null
@@ -138,6 +211,8 @@ export type Database = {
           updated_at: string
         }
         Update: {
+          ai_next_steps?: string | null
+          ai_summary?: string | null
           created_at?: string
           customer_id?: string
           email_attachment_url?: string | null
@@ -150,14 +225,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "alex_email_logs_customer_id_fkey"
+            foreignKeyName: "juno_email_logs_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "alex_email_logs_tenant_id_fkey"
+            foreignKeyName: "juno_email_logs_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -165,8 +240,10 @@ export type Database = {
           },
         ]
       }
-      alex_sms_logs: {
+      juno_sms_logs: {
         Row: {
+          ai_next_steps: string | null
+          ai_summary: string | null
           created_at: string
           customer_id: string
           id: string
@@ -177,6 +254,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_next_steps?: string | null
+          ai_summary?: string | null
           created_at?: string
           customer_id: string
           id: string
@@ -187,6 +266,8 @@ export type Database = {
           updated_at: string
         }
         Update: {
+          ai_next_steps?: string | null
+          ai_summary?: string | null
           created_at?: string
           customer_id?: string
           id?: string
@@ -198,14 +279,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "alex_sms_logs_customer_id_fkey"
+            foreignKeyName: "juno_sms_logs_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "alex_sms_logs_tenant_id_fkey"
+            foreignKeyName: "juno_sms_logs_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -308,15 +389,24 @@ export type Database = {
         Row: {
           address: string | null
           age: string | null
+          ai_interaction_summary: string | null
+          ai_next_steps: string | null
           created_at: string
           custom_fields: Json | null
           email: string | null
           first_name: string
           id: string
+          juno_call_duration_total: number | null
+          last_juno_call_date: string | null
+          last_juno_interaction_date: string | null
+          last_juno_interaction_type: string | null
           last_name: string
           phone_number: string | null
           status: string | null
           tenant_id: string
+          total_juno_calls: number | null
+          total_juno_emails: number | null
+          total_juno_sms: number | null
           updated_at: string
           user_account_id: string | null
           zip_code: string | null
@@ -324,15 +414,24 @@ export type Database = {
         Insert: {
           address?: string | null
           age?: string | null
+          ai_interaction_summary?: string | null
+          ai_next_steps?: string | null
           created_at?: string
           custom_fields?: Json | null
           email?: string | null
           first_name: string
           id: string
+          juno_call_duration_total?: number | null
+          last_juno_call_date?: string | null
+          last_juno_interaction_date?: string | null
+          last_juno_interaction_type?: string | null
           last_name: string
           phone_number?: string | null
           status?: string | null
           tenant_id: string
+          total_juno_calls?: number | null
+          total_juno_emails?: number | null
+          total_juno_sms?: number | null
           updated_at: string
           user_account_id?: string | null
           zip_code?: string | null
@@ -340,15 +439,24 @@ export type Database = {
         Update: {
           address?: string | null
           age?: string | null
+          ai_interaction_summary?: string | null
+          ai_next_steps?: string | null
           created_at?: string
           custom_fields?: Json | null
           email?: string | null
           first_name?: string
           id?: string
+          juno_call_duration_total?: number | null
+          last_juno_call_date?: string | null
+          last_juno_interaction_date?: string | null
+          last_juno_interaction_type?: string | null
           last_name?: string
           phone_number?: string | null
           status?: string | null
           tenant_id?: string
+          total_juno_calls?: number | null
+          total_juno_emails?: number | null
+          total_juno_sms?: number | null
           updated_at?: string
           user_account_id?: string | null
           zip_code?: string | null
@@ -372,31 +480,40 @@ export type Database = {
       }
       interactions: {
         Row: {
+          ai_next_steps: string | null
+          ai_summary: string | null
           created_at: string
           customer_id: string
           details: string | null
           id: string
           interaction_date: string | null
+          interaction_source: string | null
           interaction_type: string | null
           tenant_id: string
           updated_at: string
         }
         Insert: {
+          ai_next_steps?: string | null
+          ai_summary?: string | null
           created_at?: string
           customer_id: string
           details?: string | null
           id: string
           interaction_date?: string | null
+          interaction_source?: string | null
           interaction_type?: string | null
           tenant_id: string
           updated_at: string
         }
         Update: {
+          ai_next_steps?: string | null
+          ai_summary?: string | null
           created_at?: string
           customer_id?: string
           details?: string | null
           id?: string
           interaction_date?: string | null
+          interaction_source?: string | null
           interaction_type?: string | null
           tenant_id?: string
           updated_at?: string
@@ -530,6 +647,87 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_phone_numbers: {
+        Row: {
+          id: string
+          tenant_id: string
+          phone_number: string
+          twilio_sid: string
+          twilio_account_sid: string | null
+          vapi_phone_number_id: string | null
+          status: string
+          monthly_cost_credits: number
+          setup_cost_credits: number
+          purchased_at: string
+          next_billing_date: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          phone_number: string
+          twilio_sid: string
+          twilio_account_sid?: string | null
+          vapi_phone_number_id?: string | null
+          status?: string
+          monthly_cost_credits: number
+          setup_cost_credits?: number
+          purchased_at?: string
+          next_billing_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          phone_number?: string
+          twilio_sid?: string
+          twilio_account_sid?: string | null
+          vapi_phone_number_id?: string | null
+          status?: string
+          monthly_cost_credits?: number
+          setup_cost_credits?: number
+          purchased_at?: string
+          next_billing_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      voice_agents: {
+        Row: {
+          id: string
+          tenant_id: string
+          name: string
+          vapi_agent_id: string | null
+          vapi_org_id: string | null
+          phone_number_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          name: string
+          vapi_agent_id?: string | null
+          vapi_org_id?: string | null
+          phone_number_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          name?: string
+          vapi_agent_id?: string | null
+          vapi_org_id?: string | null
+          phone_number_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_accounts: {
         Row: {
           address: string | null
@@ -613,7 +811,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_tenant_credit_balance: {
+        Args: {
+          tenant_id_param: string
+        }
+        Returns: number
+      }
+      update_credits: {
+        Args: {
+          tenant_id_param: string
+          amount_param: number
+          transaction_type_param: string
+          description_param: string
+          reference_id_param?: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

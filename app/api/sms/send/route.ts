@@ -8,6 +8,13 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check organization approval before allowing SMS sending
+    const { checkOrganizationApproval } = await import('@/lib/organization-verification');
+    const verificationError = await checkOrganizationApproval();
+    if (verificationError) {
+      return verificationError;
+    }
+
     const supabase = await createClient();
     const { tenant } = await getCurrentTenant();
     

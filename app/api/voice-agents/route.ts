@@ -49,6 +49,13 @@ export const GET = withTenant(async (tenantId: string) => {
 export const POST = withTenant(async (tenantId: string, req: NextRequest) => {
   const supabase = await createClient();
   try {
+    // Check organization approval before allowing voice agent creation
+    const { checkOrganizationApproval } = await import('@/lib/organization-verification');
+    const verificationError = await checkOrganizationApproval();
+    if (verificationError) {
+      return verificationError;
+    }
+
     const data: VoiceAgentData = await req.json();
     
     // Validate required fields

@@ -1,0 +1,41 @@
+name: Process Email Notifications (Every 5 Minutes)
+
+on:
+  schedule:
+    # Run every 5 minutes (more efficient, still fast enough for emails)
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Allow manual trigger for testing
+
+jobs:
+  process-emails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    
+    steps:
+      - name: Process Email Queue
+        run: |
+          echo "Processing email queue at $(date)"
+          
+          response=$(curl -X POST ${{ secrets.VERCEL_APP_URL }}/api/cron/process-notifications \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 30 \
+            --retry 2 \
+            --silent \
+            --write-out "HTTPSTATUS:%{http_code}" \
+            --fail-with-body)
+          
+          http_code=$(echo $response | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+          body=$(echo $response | sed -e 's/HTTPSTATUS:.*//g')
+          
+          if [ $http_code -eq 200 ]; then
+            echo "✅ Email processing successful: $body"
+          else
+            echo "❌ Email processing failed with status $http_code: $body"
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "📧 Email processing job completed at $(date)"
+          echo "💰 This job costs ~0.1 GitHub Actions minutes" 

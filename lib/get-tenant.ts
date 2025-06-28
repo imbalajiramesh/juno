@@ -80,10 +80,10 @@ export async function getCurrentTenant() {
   const { data: defaultRole, error: roleError } = await supabase
     .from('roles')
     .select('*')
-    .eq('role_name', 'Owner')
+    .eq('role_name', 'admin')
     .single();
 
-  const defaultRoleName = defaultRole?.role_name || 'Owner';
+  const defaultRoleName = defaultRole?.role_name || 'admin';
 
   if (roleError && roleError.code !== 'PGRST116') {
     console.warn('Error fetching default role:', roleError?.message);

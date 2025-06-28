@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { EnhancedVerificationModal } from '@/components/verification/enhanced-verification-modal';
 
 interface PhoneNumber {
   id: string;
@@ -468,174 +469,15 @@ export default function PhoneNumbersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* SMS Compliance Modal */}
-      <Dialog open={isComplianceModalOpen} onOpenChange={setIsComplianceModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>SMS Compliance & Verification</DialogTitle>
-            <DialogDescription>
-              Optional services to enable business SMS and improve deliverability for {selectedPhoneNumber?.phone_number}
-            </DialogDescription>
-          </DialogHeader>
-
-          {complianceData && (
-            <div className="space-y-6">
-              {/* Current Status */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Current Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${complianceData.dlc_brand_registered ? 'bg-green-500' : 'bg-gray-300'}`} />
-                      <span className="text-sm">10DLC Brand Registered</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${complianceData.phone_verified ? 'bg-green-500' : 'bg-gray-300'}`} />
-                      <span className="text-sm">Phone Verified</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${complianceData.dlc_campaign_registered ? 'bg-green-500' : 'bg-gray-300'}`} />
-                      <span className="text-sm">Campaign Registered</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${complianceData.carrier_verified ? 'bg-green-500' : 'bg-gray-300'}`} />
-                      <span className="text-sm">Carrier Verified</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Available Services */}
-              {complianceData.services_available && (
-                <div className="space-y-4">
-                  <h3 className="font-semibold">Available Services</h3>
-                  
-                  {/* DLC Brand Registration */}
-                  {!complianceData.dlc_brand_registered && (
-                    <Card className="border-orange-200 bg-orange-50">
-                      <CardContent className="pt-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h4 className="font-medium text-orange-900">10DLC Brand Registration</h4>
-                            <p className="text-sm text-orange-700 mb-2">
-                              {complianceData.services_available.dlc_brand_registration.description}
-                            </p>
-                            <p className="text-xs text-orange-600">
-                              Required for business SMS in the US. Improves delivery rates and reduces spam filtering.
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-orange-900">
-                              {complianceData.services_available.dlc_brand_registration.cost} credits
-                            </div>
-                          </div>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          className="w-full"
-                          onClick={() => {
-                            // This would open a form for business details
-                            const businessName = prompt('Business Name:');
-                            const businessWebsite = prompt('Business Website:');
-                            const businessType = 'corporation'; // Could be a select
-                            
-                            if (businessName && businessWebsite) {
-                              handleComplianceService('dlc_brand_registration', {
-                                business_name: businessName,
-                                business_website: businessWebsite,
-                                business_type: businessType
-                              });
-                            }
-                          }}
-                          disabled={credits.balance < complianceData.services_available.dlc_brand_registration.cost}
-                        >
-                          Register Brand
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Phone Verification */}
-                  {!complianceData.phone_verified && (
-                    <Card className="border-blue-200 bg-blue-50">
-                      <CardContent className="pt-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h4 className="font-medium text-blue-900">Phone Number Verification</h4>
-                            <p className="text-sm text-blue-700 mb-2">
-                              {complianceData.services_available.phone_verification.description}
-                            </p>
-                            <p className="text-xs text-blue-600">
-                              Verifies number ownership and improves SMS deliverability.
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-blue-900">
-                              {complianceData.services_available.phone_verification.cost} credits
-                            </div>
-                          </div>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          className="w-full"
-                          onClick={() => handleComplianceService('phone_verification')}
-                          disabled={credits.balance < complianceData.services_available.phone_verification.cost}
-                        >
-                          Verify Number
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Carrier Verification */}
-                  {!complianceData.carrier_verified && (
-                    <Card className="border-purple-200 bg-purple-50">
-                      <CardContent className="pt-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h4 className="font-medium text-purple-900">Carrier Verification</h4>
-                            <p className="text-sm text-purple-700 mb-2">
-                              {complianceData.services_available.carrier_verification.description}
-                            </p>
-                            <p className="text-xs text-purple-600">
-                              Premium verification with carrier-level approval for maximum deliverability.
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-purple-900">
-                              {complianceData.services_available.carrier_verification.cost} credits
-                            </div>
-                          </div>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          className="w-full"
-                          onClick={() => handleComplianceService('carrier_verification')}
-                          disabled={credits.balance < complianceData.services_available.carrier_verification.cost}
-                        >
-                          Carrier Verify
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              )}
-
-              {/* Current Balance */}
-              <Card className="bg-gray-50">
-                <CardContent className="pt-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Your Credit Balance</span>
-                    <span className="font-bold">{credits.balance} credits</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Enhanced SMS Compliance Modal */}
+      <EnhancedVerificationModal
+        phoneNumber={selectedPhoneNumber}
+        complianceData={complianceData}
+        isOpen={isComplianceModalOpen}
+        onClose={() => setIsComplianceModalOpen(false)}
+        onVerificationStart={handleComplianceService}
+        creditBalance={credits.balance}
+      />
     </div>
   );
 } 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { getCurrentTenant } from '@/lib/get-tenant';
+import { checkOrganizationApproval } from '@/lib/organization-verification';
 
 export async function GET(req: NextRequest) {
   try {
@@ -32,6 +33,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // Check organization approval before allowing phone number purchase
+    const verificationError = await checkOrganizationApproval();
+    if (verificationError) {
+      return verificationError;
+    }
+
     const supabase = await createClient();
     const { tenant } = await getCurrentTenant();
     

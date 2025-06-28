@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useState, useCallback } from 'react';
 import { motion, Variants } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -26,11 +26,27 @@ const fadeIn: Variants = {
   animate: { opacity: 1, y: 0 },
 };
 
-const CustomerProfile: React.FC<CustomerProfileProps> = ({ id, initialCustomer, interactions }) => {
+const CustomerProfile: React.FC<CustomerProfileProps> = ({ id, initialCustomer, interactions: initialInteractions }) => {
   const [customer, setCustomer] = useState<Customer>(initialCustomer);
+  const [interactions, setInteractions] = useState<Interaction[]>(initialInteractions);
   const [isEditing, setIsEditing] = useState(false);
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const router = useRouter();
+
+  // Refresh interactions from API
+  const refreshInteractions = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/interactions?customer_id=${id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch interactions');
+      }
+      const data = await response.json();
+      setInteractions(data.interactions || []);
+    } catch (error) {
+      console.error('Error refreshing interactions:', error);
+      toast.error('Failed to refresh interactions');
+    }
+  }, [id]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -159,7 +175,16 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({ id, initialCustomer, 
           animate="animate"
         >
           <Suspense fallback={<InteractionsCardSkeleton />}>
-            <InteractionsCard interactions={interactions} />
+            <InteractionsCard 
+              interactions={interactions} 
+              customer={{
+                id: customer.id,
+                first_name: customer.first_name,
+                last_name: customer.last_name,
+                email: customer.email || undefined
+              }}
+              onRefresh={refreshInteractions}
+            />
           </Suspense>
         </motion.div>
       </div>

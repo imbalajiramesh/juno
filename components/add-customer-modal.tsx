@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, ControllerRenderProps, FieldValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,7 +14,7 @@ const customerSchema = z.object({
   lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email address." }),
   phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/, { message: "Invalid phone number." }).optional().or(z.literal('')),
-  status: z.enum(["Active", "Inactive"]),
+  status: z.string(),
   assignedTo: z.string().default("unassigned")
 });
 
@@ -28,6 +28,8 @@ interface AddCustomerModalProps {
 }
 
 const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onClose, onCustomerAdded, userAccounts }) => {
+  const [customerStatuses, setCustomerStatuses] = useState<any[]>([]);
+  
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
@@ -35,12 +37,36 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onClose, on
       lastName: '',
       email: '',
       phoneNumber: '',
-      status: 'Active',
+      status: 'new',
       assignedTo: 'unassigned'
     }
   });
 
   const supabase = createClient();
+
+  useEffect(() => {
+    fetchCustomerStatuses();
+  }, []);
+
+  const fetchCustomerStatuses = async () => {
+    try {
+      const response = await fetch('/api/customer-statuses');
+      if (!response.ok) throw new Error('Failed to fetch customer statuses');
+      const statuses = await response.json();
+      setCustomerStatuses(statuses);
+      
+      // Set default status
+      const defaultStatus = statuses.find((s: any) => s.is_default)?.name || statuses[0]?.name || 'new';
+      form.setValue('status', defaultStatus);
+    } catch (error) {
+      console.error('Error fetching customer statuses:', error);
+      // Fall back to default statuses
+      setCustomerStatuses([
+        { name: 'new', label: 'New' },
+        { name: 'contacted', label: 'Contacted' },
+      ]);
+    }
+  };
 
   const onSubmit = async (data: CustomerFormData) => {
     // Get current user's tenant_id (this would typically come from auth context)
@@ -150,8 +176,11 @@ const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onClose, on
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Inactive">Inactive</SelectItem>
+                      {customerStatuses.map((status) => (
+                        <SelectItem key={status.name} value={status.name}>
+                          {status.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
